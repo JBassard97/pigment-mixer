@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Pigment Mixing Demo</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        text-align: center;
+        padding: 1rem;
+        margin: 0;
+      }
+      .color-block {
+        display: inline-block;
+        width: 100%;
+        height: 40px;
+        margin: 0.2rem;
+        border-radius: 20px;
+        border: 2px solid #ccc;
+        color: #000;
+        font-weight: bold;
+        font-size: 13px;
+        padding: 0.2rem;
+        box-sizing: border-box;
+        vertical-align: top;
+        white-space: pre-wrap;
+      }
+      .row {
+        margin-top: 2rem;
+      }
+      button {
+        margin-top: 1rem;
+        padding: 0.3rem 0.8rem;
+        font-size: 16px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Pigment-Style Color Mixing</h1>
+
+    <label
+      >Color 1:
+      <input type="color" id="color1" value="#ff0000" />
+    </label>
+    <label
+      >Color 2:
+      <input type="color" id="color2" value="#ffff00" />
+    </label>
+
+    <div>
+      <button onclick="copyRgbValues()">📋 Copy All RGB Values</button>
+    </div>
+
+    <div class="row" id="results"></div>
+
+    <script>
+      let currentRgbArray = [];
+
+      function rgbToCmy(r, g, b) {
+        return [1 - r / 255, 1 - g / 255, 1 - b / 255];
+      }
+
+      function cmyToRgb(c, m, y) {
+        return [
+          Math.round((1 - c) * 255),
+          Math.round((1 - m) * 255),
+          Math.round((1 - y) * 255),
+        ];
+      }
+
+      function hexToRgb(hex) {
+        hex = hex.replace("#", "");
+        const bigint = parseInt(hex, 16);
+        return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+      }
+
+      function mixPigmentRGB(color1, color2, weight1 = 0.5, weight2 = 0.5) {
+        const [c1, m1, y1] = rgbToCmy(...color1);
+        const [c2, m2, y2] = rgbToCmy(...color2);
+
+        const cMix = c1 * weight1 + c2 * weight2;
+        const mMix = m1 * weight1 + m2 * weight2;
+        const yMix = y1 * weight1 + y2 * weight2;
+
+        return cmyToRgb(cMix, mMix, yMix);
+      }
+
+      function updateColors() {
+        const rgb1 = hexToRgb(document.getElementById("color1").value);
+        const rgb2 = hexToRgb(document.getElementById("color2").value);
+
+        const resultsDiv = document.getElementById("results");
+        resultsDiv.innerHTML = "";
+        currentRgbArray = [];
+
+        for (let i = 9; i >= 1; i--) {
+          const weight1 = i / 10;
+          const weight2 = 1 - weight1;
+
+          const mixed = mixPigmentRGB(rgb1, rgb2, weight1, weight2);
+          const colorStr = `rgb(${mixed.join(",")})`;
+
+          currentRgbArray.push(colorStr);
+
+          const block = document.createElement("div");
+          block.className = "color-block";
+          block.style.backgroundColor = colorStr;
+          block.textContent = `${Math.round(weight1 * 100)}% / ${Math.round(
+            weight2 * 100
+          )}%\n${colorStr}`;
+
+          resultsDiv.appendChild(block);
+        }
+      }
+
+      function copyRgbValues() {
+        const textToCopy = JSON.stringify(currentRgbArray, null, 2);
+        navigator.clipboard
+          .writeText(textToCopy)
+          .then(() => alert("RGB values copied to clipboard!"))
+          .catch(() => alert("Failed to copy."));
+      }
+
+      document.getElementById("color1").addEventListener("input", updateColors);
+      document.getElementById("color2").addEventListener("input", updateColors);
+      updateColors();
+    </script>
+  </body>
+</html>
